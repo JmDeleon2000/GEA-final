@@ -1,0 +1,62 @@
+cmake_minimum_required(VERSION 3.26.0)
+
+project(DEMIplatformer)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/src/*.cpp"
+)
+
+
+
+
+
+set(SDL2_DIR "D:/SDL/SDL2-2.26.4/cmake")
+find_package(SDL2 CONFIG REQUIRED)
+include_directories(${PROJECT_NAME} ${SDL2_INCLUDE_DIRS})
+
+set(SDL2_image_DIR "D:/SDL_image/SDL2_image-2.6.3/cmake")
+find_package(SDL2_image  REQUIRED)
+#include_directories("D:/SDL_image/SDL2_image-2.6.3/include")
+#link_directories("D:/SDL/SDL2_image-2.6.3/lib/x64")
+
+set(SDL2_ttf_DIR "D:/SDL_ttf/SDL2_ttf-2.20.2/cmake")
+find_package(SDL2_ttf  REQUIRED)
+include_directories(${SDL2_ttf_INCLUDE_DIRS})
+#link_directories("D:/SDL/SDL2_ttf-2.20.2/lib/x64")
+
+find_package(box2d  REQUIRED)
+include_directories("D:/dev/vcpkg/vcpkg/installed/x64-windows/include")
+
+link_directories("D:/dev/vcpkg/vcpkg/installed/x64-windows/lib")
+
+#include_directories("/usr/include/fmod/")
+#set(FMOD_LIBRARIES "/usr/lib/libfmod.so")
+
+#add_compile_definitions(SDL_MAIN_HANDLED=True)
+
+add_executable(${PROJECT_NAME} src/main.cpp ${SOURCES} "src/main.cpp")
+
+target_include_directories(${PROJECT_NAME}
+    PRIVATE
+      ${PROJECT_SOURCE_DIR}/include
+    PUBLIC ${PROJECT_SOURCE_DIR}/src
+)
+
+target_link_libraries(
+  ${PROJECT_NAME}
+  ${SDL2_LIBRARIES}
+  ${SDL2_image_LIBRARIES}
+  ${SDL2_ttf_LIBRARIES}
+  box2d
+)
+
+get_target_property(OUT ${PROJECT_NAME}  LINK_LIBRARIES)
+message(STATUS ${OUT})
