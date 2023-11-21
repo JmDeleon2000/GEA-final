@@ -34,10 +34,11 @@ struct SpriteComponent {
 };
 
 struct TilemapComponent {
-  std::vector<Tile> tilemap;
+  std::string name;
   int width;
   int height;
   int tileSize;
+  int scale;
 };
 
 struct CameraComponent {

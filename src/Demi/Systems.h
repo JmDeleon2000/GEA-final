@@ -27,7 +27,7 @@ public:
     scene->player = new Entity(scene->r.create(), scene);
     scene->player->addComponent<NameComponent>("PLAYER");
     
-    auto transform = scene->player->addComponent<TransformComponent>(0, 0, 3 * SCALE, 3 * SCALE, 45.0);
+    auto transform = scene->player->addComponent<TransformComponent>(0, 0, 4 * SCALE, 4 * SCALE, 45.0);
     scene->player->addComponent<SpriteComponent>(
       "demi-lich.png",
       128, 128,
@@ -41,8 +41,8 @@ public:
 
     float x = 20 * PIXELS_PER_METER; 
     float y = 62 * PIXELS_PER_METER; 
-    float hx = (3.0f * PIXELS_PER_METER) / 2.0f;
-    float hy = (3.0f * PIXELS_PER_METER) / 2.0f;
+    float hx = (4.0f * PIXELS_PER_METER) / 2.0f;
+    float hy = (4.0f * PIXELS_PER_METER) / 2.0f;
 
     b2BodyDef bodyDef;
     bodyDef.type = b2_dynamicBody;
@@ -479,3 +479,5 @@ public:
     }
   }
 };
+
+

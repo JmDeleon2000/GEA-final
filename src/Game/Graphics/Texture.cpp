@@ -94,8 +94,6 @@ void Texture::render(int x, int y, int w, int h, SDL_Rect* clip, double angle, S
 }
 
 
-
-
 bool Texture::lockTexture() {
 	if(pixels != nullptr) {
     // texture is already locked
@@ -144,4 +142,44 @@ Uint32 Texture::getPixel(int xy) {
 
 Uint32* Texture::getPixels() {
 	return reinterpret_cast<Uint32*>(pixels);
+}
+
+
+void Texture::createEmpty(int x, int y, Uint8 red, Uint8 green, Uint8 blue) {
+    if (texture != nullptr) {
+        SDL_DestroyTexture(texture);
+        texture = nullptr;
+    }
+
+
+
+    SDL_Texture* newTexture = nullptr;
+    newTexture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_TARGET, x, y);
+    SDL_SetTextureBlendMode(newTexture, SDL_BLENDMODE_BLEND);
+
+    SDL_UnlockTexture(newTexture);
+
+
+
+    texture = newTexture;
+}
+
+
+void Texture::drawOnTexture(SDL_Texture* src, int x, int y, int w, int h, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip) {
+    int rWidth = width;
+    int rHeight = height;
+
+    if (w != 0) {
+        rWidth = w;
+    }
+
+    if (h != 0) {
+        rHeight = h;
+    }
+
+    SDL_Rect renderQuad = { x, y, rWidth, rHeight };
+
+    SDL_SetRenderTarget(renderer, texture);
+    SDL_RenderCopyEx(renderer, src, clip, &renderQuad, angle, center, flip);
+    SDL_SetRenderTarget(renderer, NULL);
 }

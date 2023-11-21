@@ -55,35 +55,23 @@ public:
   void run(double dT) override;
 };
 
-class SlideShowSetupSystem : public SetupSystem {
+
+
+
+
+
+class TilemapSetupSystem : public SetupSystem {
 public:
-  SlideShowSetupSystem(SpriteComponent sprite, short slideCount = 0, int slideDurationMillis = -1);
-  ~SlideShowSetupSystem();
-  void run() override;
+	TilemapSetupSystem(SDL_Renderer* renderer);
+	~TilemapSetupSystem();
+
+	void run() override;
 
 private:
-  Entity* slider;  // we keep this reference to delete it later
-  SpriteComponent sprite;
-  short slideCount;
-  int slideDurationMillis;
+	SDL_Renderer* renderer;
 };
 
-class SlideShowUpdateSystem : public UpdateSystem {
+class TilemapRenderSystem : public RenderSystem {
 public:
-  void run(double dT) override;
+	void run(SDL_Renderer* renderer) override;
 };
-
-class BlushSetupSystem : public SetupSystem {
-public:
-  BlushSetupSystem(SDL_Renderer* renderer);
-  void run() override;
-private:
-  SDL_Renderer* renderer;
-};
-
-class BlushRenderSystem : public RenderSystem {
-public:
-  void run(SDL_Renderer* renderer) override;
-};
-
-

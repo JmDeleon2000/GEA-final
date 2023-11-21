@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
 
-	 Yoyo s = Yoyo();
+	 Demi s = Demi();
 	 s.setup();
 	 s.run();
 	 int a;

@@ -1,4 +1,5 @@
 #include "SpriteSystems.h"
+#include <fstream>
 
 #include <SDL_stdinc.h>
 #include <SDL_timer.h>
@@ -114,3 +115,121 @@ void SpriteUpdateSystem::run(double dT) {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+void TilemapRenderSystem::run(SDL_Renderer* renderer) {
+    auto view = scene->r.view<TilemapComponent>();
+    for (auto entity : view) {
+        const auto tilemapComponent = view.get<TilemapComponent>(entity);
+        Texture* texture = TextureManager::GetTexture(tilemapComponent.name);
+
+        texture->render(
+            0,
+            0,
+            SCALE * SCREEN_WIDTH,
+            SCALE * SCREEN_HEIGHT
+        );
+    }
+}
+
+TilemapSetupSystem::~TilemapSetupSystem() {
+    auto view = scene->r.view<TilemapComponent>();
+
+    for (auto entity : view) {
+        const auto tilemapComponent = view.get<TilemapComponent>(entity);
+        TextureManager::UnloadTexture(tilemapComponent.name);
+    }
+}
+
+TilemapSetupSystem::TilemapSetupSystem(SDL_Renderer* renderer)
+    : renderer(renderer) { }
+
+
+void TilemapSetupSystem::run() {
+    using namespace std;
+    auto& tilemapComponent = scene->world->get<TilemapComponent>();
+    int width = SCREEN_WIDTH;
+    int height = SCREEN_HEIGHT;
+    int size = 128;
+    int tile_scale = 4;
+    tilemapComponent.name = "Background";
+
+    Texture* tilemap = TextureManager::LoadTexture("tiles/tiles.png", renderer);
+    Texture* backgroundTile = TextureManager::LoadTexture("tiles/books.png", renderer);
+
+    Texture* canvas = TextureManager::MakeEmpty("Background", renderer,
+        SCREEN_WIDTH * SCALE, SCREEN_HEIGHT * SCALE, 255, 255, 255);
+    canvas->unlockTexture();
+    int x;
+    int y = 0;
+    bool layout[25 * 25] = { 0 };
+    ifstream layoutFile("assets/tiles/foo.csv", ios::in);
+    string line;
+    while (getline(layoutFile, line)) 
+    {
+        x = 0;
+        while (!line.empty())
+        {
+            char b = line.front();
+            line.erase(0, 2);
+            layout[x + y * 25] = b == '1';
+            x++;
+        }
+        y++;
+    }
+
+    for (y = 0; y < 25; y++)
+        for (x = 0; x < 25; x++)
+            if (layout[x + y * 25])
+            {
+                int mask = 0;
+                if (x > 0 && x < 24)
+                {
+                    if (layout[x - 1 + y * 25])
+                        mask |= 2;
+                    if (layout[x + 1 + y * 25])
+                        mask |= 4;
+                }
+                if (y > 0 && y < 24)
+                {
+                    if (layout[x + (y - 1) * 25])
+                        mask |= 1;
+                    if (layout[x + (y + 1) * 25])
+                        mask |= 8;
+                }
+    
+    
+                SDL_Rect renderQuad = { (mask % 4) * 128, (mask / 4) * 128, 128, 128 };
+                canvas->drawOnTexture(tilemap->texture,
+                    x * SCALE * tile_scale,
+                    y * SCALE * tile_scale,
+                    SCALE * tile_scale,
+                    SCALE * tile_scale,
+                    &renderQuad);
+            }
+            else
+                canvas->drawOnTexture(backgroundTile->texture,
+                    x * SCALE * 4,
+                    y * SCALE * 4,
+                    SCALE * 4,
+                    SCALE * 4);
+
+    //for (x = 0; x < SCREEN_WIDTH; x++)
+    //    for(y = 0; y < SCREEN_WIDTH; y++)
+    //        canvas->drawOnTexture(backgroundTile->texture,
+    //            x * SCALE * 4,
+    //            y * SCALE * 4,
+    //            SCALE * 4,
+    //            SCALE * 4);
+    canvas->lockTexture();
+
+}

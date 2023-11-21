@@ -13,6 +13,7 @@ class Texture {
 		~Texture();
 
 		void load(std::string path, PixelShader shader = { nullptr, "" });
+		void createEmpty(int x, int y, Uint8 red, Uint8 green, Uint8 blue);
 
 		void render(int x, int y, int w = 0, int h = 0, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
 
@@ -20,6 +21,7 @@ class Texture {
 
 		bool lockTexture();
 		bool unlockTexture();
+		void drawOnTexture(SDL_Texture* src, int x, int y, int w = 0, int h = 0, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
 		Uint32* getPixels();
     int getPixelCount();
     Uint32 getPixel(int x, int y);
@@ -27,8 +29,8 @@ class Texture {
 
 		int width;
 		int height;
-	private:
 		SDL_Texture* texture;
+	private:
 		void* pixels;
 		int pitch;
     Uint32 format;

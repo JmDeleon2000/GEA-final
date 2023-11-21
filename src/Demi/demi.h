@@ -2,9 +2,9 @@
 
 #include "Game/Game.h"
 
-class Yoyo : public Game {
+class Demi : public Game {
 public:
-  Yoyo();
+  Demi();
 
   void setup() override;
 

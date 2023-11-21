@@ -30,3 +30,12 @@ Texture* TextureManager::GetTexture(const std::string& fileName, const std::stri
     
     return nullptr;
 }
+
+Texture* TextureManager::MakeEmpty(const std::string& name, SDL_Renderer* renderer, int x, int y, Uint8 red, Uint8 green, Uint8 blue) {
+
+    Texture* tex = new Texture(renderer);
+    tex->createEmpty(x, y, red, green, blue);
+
+    textures[name] = tex;
+    return tex;
+}
