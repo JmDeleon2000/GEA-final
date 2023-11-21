@@ -20,14 +20,8 @@ Scene* Demi::createGamePlayScene() {
   addSetupSystem<PhysicsSetupSystem>(scene);
   addSetupSystem<CharacterSetupSystem>(scene);
   //addSetupSystem<EnemySetupSystem>(scene);
-  addSetupSystem<BgSetupSystem>(scene, 16, 64, 84, 2);
-  addSetupSystem<BgSetupSystem>(scene, 32, 58, 84, 2);
-  addSetupSystem<BgSetupSystem>(scene, 0, 48, 40, 2);
-  addSetupSystem<BgSetupSystem>(scene, 46, 0, 2, 40);
-  addSetupSystem<BgSetupSystem>(scene, 54, 52, 40, 2);
-  addSetupSystem<BgSetupSystem>(scene, 0, 98, 100, 2);
+
   addSetupSystem<TilemapSetupSystem>(scene, renderer);
-  //addRenderSystem<BgColorSystem>(scene);
 
   addSetupSystem<SpriteSetupSystem>(scene, renderer);
   addUpdateSystem<SpriteUpdateSystem>(scene);
@@ -42,6 +36,6 @@ Scene* Demi::createGamePlayScene() {
   
   addRenderSystem<TilemapRenderSystem>(scene);
   addRenderSystem<SpriteRenderSystem>(scene);
-  addRenderSystem<FixtureRenderSystem>(scene);
+  //addRenderSystem<FixtureRenderSystem>(scene);
   return scene;
 }

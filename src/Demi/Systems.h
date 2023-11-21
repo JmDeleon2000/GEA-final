@@ -1,5 +1,6 @@
 #pragma once
-
+#include <fstream>
+#include "Game/Graphics/TextureManager.h"
 #include "Game/ContactListener.h"
 #include "Demi/Components.h"
 #include "constants.h"
@@ -27,7 +28,7 @@ public:
     scene->player = new Entity(scene->r.create(), scene);
     scene->player->addComponent<NameComponent>("PLAYER");
     
-    auto transform = scene->player->addComponent<TransformComponent>(0, 0, 4 * SCALE, 4 * SCALE, 45.0);
+    auto transform = scene->player->addComponent<TransformComponent>(0, 0, 3 * SCALE, 3 * SCALE, 45.0);
     scene->player->addComponent<SpriteComponent>(
       "demi-lich.png",
       128, 128,
@@ -40,9 +41,9 @@ public:
     auto world = scene->world->get<PhysicsComponent>().b2d;
 
     float x = 20 * PIXELS_PER_METER; 
-    float y = 62 * PIXELS_PER_METER; 
-    float hx = (4.0f * PIXELS_PER_METER) / 2.0f;
-    float hy = (4.0f * PIXELS_PER_METER) / 2.0f;
+    float y = 80 * PIXELS_PER_METER; 
+    float hx = (3.0f * PIXELS_PER_METER) / 2.0f;
+    float hy = (3.0f * PIXELS_PER_METER) / 2.0f;
 
     b2BodyDef bodyDef;
     bodyDef.type = b2_dynamicBody;
@@ -481,3 +482,134 @@ public:
 };
 
 
+class TilemapSetupSystem : public SetupSystem {
+public:
+    TilemapSetupSystem(SDL_Renderer* renderer)
+        : renderer(renderer) { }
+    ~TilemapSetupSystem() {
+        auto view = scene->r.view<TilemapComponent>();
+
+        for (auto entity : view) {
+            const auto tilemapComponent = view.get<TilemapComponent>(entity);
+            TextureManager::UnloadTexture(tilemapComponent.name);
+        }
+    }
+
+    void run() override {
+        using namespace std;
+        auto& tilemapComponent = scene->world->get<TilemapComponent>();
+        int width = SCREEN_WIDTH;
+        int height = SCREEN_HEIGHT;
+        int size = 128;
+        int tile_scale = 4;
+        tilemapComponent.name = "Background";
+
+        Texture* tilemap = TextureManager::LoadTexture("tiles/tiles.png", renderer);
+        Texture* backgroundTile = TextureManager::LoadTexture("tiles/books.png", renderer);
+
+        Texture* canvas = TextureManager::MakeEmpty("Background", renderer,
+            SCREEN_WIDTH * SCALE, SCREEN_HEIGHT * SCALE, 255, 255, 255);
+        canvas->unlockTexture();
+        int x;
+        int y = 0;
+        bool layout[25 * 25] = { 0 };
+        ifstream layoutFile("assets/tiles/foo.csv", ios::in);
+        string line;
+        while (getline(layoutFile, line))
+        {
+            x = 0;
+            while (!line.empty())
+            {
+                char b = line.front();
+                line.erase(0, 2);
+                layout[x + y * 25] = b == '1';
+                x++;
+            }
+            y++;
+        }
+
+        auto world = scene->world->get<PhysicsComponent>().b2d;
+
+        for (y = 0; y < 25; y++)
+            for (x = 0; x < 25; x++)
+            {
+                canvas->drawOnTexture(backgroundTile->texture,
+                    x * SCALE * 4,
+                    y * SCALE * 4,
+                    SCALE * 4,
+                    SCALE * 4);
+                if (layout[x + y * 25])
+                {
+                    int mask = 0;
+                    if (x == 0 || layout[x - 1 + y * 25])
+                        mask |= 2;
+                    if (x == 24 || layout[x + 1 + y * 25])
+                        mask |= 4;
+
+                    if (y == 0 || layout[x + (y - 1) * 25])
+                        mask |= 1;
+                    if (y == 24 || layout[x + (y + 1) * 25])
+                        mask |= 8;
+
+
+                    float tile_x = x * SCALE * tile_scale;
+                    float tile_y = y * SCALE * tile_scale;
+                    float tile_w = SCALE * tile_scale / 2;
+                    float tile_h = SCALE * tile_scale / 2;
+
+                    SDL_Rect renderQuad = { (mask % 4) * 128, (mask / 4) * 128, 128, 128 };
+                    canvas->drawOnTexture(tilemap->texture,
+                        tile_x,
+                        tile_y,
+                        tile_w * 2,
+                        tile_h * 2,
+                        &renderQuad);
+
+                    b2BodyDef bodyDef;
+                    bodyDef.type = b2_staticBody;
+                    bodyDef.position.Set(tile_x + tile_w, tile_y + tile_h);
+
+                    b2Body* body = world->CreateBody(&bodyDef);
+
+                    b2PolygonShape groundBox;
+                    groundBox.SetAsBox(tile_w, tile_h);
+
+                    body->CreateFixture(&groundBox, 0.0f);
+
+                    scene->world->addComponent<RigidBodyComponent>(
+                        bodyDef.type,
+                        body,
+                        (int)tile_x,
+                        (int)tile_y,
+                        (int)tile_w,
+                        (int)tile_h,
+                        SDL_Color{ 0, 0, 255 }
+                    );
+                }
+            }
+                    
+        canvas->lockTexture();
+    }
+
+private:
+    SDL_Renderer* renderer;
+};
+
+class TilemapRenderSystem : public RenderSystem {
+public:
+ 
+    void run(SDL_Renderer* renderer) override {
+        auto view = scene->r.view<TilemapComponent>();
+        for (auto entity : view) {
+            const auto tilemapComponent = view.get<TilemapComponent>(entity);
+            Texture* texture = TextureManager::GetTexture(tilemapComponent.name);
+
+            texture->render(
+                0,
+                0,
+                SCALE * SCREEN_WIDTH,
+                SCALE * SCREEN_HEIGHT
+            );
+        }
+    }
+};
