@@ -65,3 +65,8 @@ struct PlayerControllerComponent {
 	bool isJumping;
 	bool isShooting;
 };
+
+struct BulletComponent {
+	double inputAngle;
+	bool onFlight;
+};

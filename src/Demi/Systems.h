@@ -148,6 +148,8 @@ public:
         scene->bullet = new Entity(scene->r.create(), scene);
         scene->bullet->addComponent<NameComponent>("BULLET");
 
+        scene->bullet->addComponent<BulletComponent>(0.0, false);
+
         auto transform = scene->bullet->addComponent<TransformComponent>(0, 0, 1 * SCALE, 1 * SCALE, 0.0);
         scene->bullet->addComponent<SpriteComponent>(
             "Laser.png",
@@ -158,8 +160,8 @@ public:
 
         auto world = scene->world->get<PhysicsComponent>().b2d;
 
-        float x = 13 * SCALE * 4;
-        float y = 22 * SCALE * 4;
+        float x = 50 * SCALE * 4;
+        float y = 50 * SCALE * 4;
         float hx = (1.0f * PIXELS_PER_METER) / 2.0f;
         float hy = (1.0f * PIXELS_PER_METER) / 2.0f;
 
@@ -262,14 +264,6 @@ public:
             auto& controller = view.get<EnemyComponent>(e);
             auto& sprite = view.get<SpriteComponent>(e);
 
-            if (controller.isDead)
-            {
-                
-                rb.body->DestroyFixture(rb.fixture);
-                scene->r.destroy(e);
-                continue;
-            }
-
             b2Vec2 position = rb.body->GetPosition(); // x, y meters
 
 
@@ -305,6 +299,31 @@ public:
     }
 };
 
+class EnemyDeathCheckUpSystem : public UpdateSystem {
+public:
+    void run(double dT) {
+        const auto view = scene->r.view<RigidBodyComponent, EnemyComponent>();
+        int aliveAmount = 0;
+        for (const auto e : view) {
+            const auto rb = view.get<RigidBodyComponent>(e);
+            auto& controller = view.get<EnemyComponent>(e);
+
+            if (controller.isDead)
+            {
+                rb.body->DestroyFixture(rb.fixture);
+                scene->r.destroy(e);
+                continue;
+            }
+            aliveAmount += 1;
+        }
+        if (aliveAmount < 1)
+        {
+            print("You got rid of all the kobolds");
+            print("But why are you in this situation?");
+            exit(1);
+        }
+    }
+};
 
 class PlayerMovementUpdateSystem : public UpdateSystem {
 public:
@@ -317,7 +336,7 @@ public:
             auto& controller = view.get<PlayerControllerComponent>(e);
 
             b2Vec2 position = rb.body->GetPosition(); // x, y meters
-
+            
             if (controller.isJumping)
             {
                 auto grav = scene->world->get<PhysicsComponent>().b2d->GetGravity();
@@ -327,7 +346,8 @@ public:
                 else
                     controller.actualAngle = 180 - atanf(controller.Yv / (-controller.Xv)) * 360 / tau;
                 
-                rb.body->SetLinearVelocity(b2Vec2(controller.Xv * SCALE, -controller.Yv * SCALE));
+                rb.body->SetLinearVelocity(b2Vec2(controller.Xv,
+                    -controller.Yv));
 
             }
 
@@ -344,6 +364,25 @@ public:
                 controller.actualAngle = controller.inputAngle;
             }
             transform.angle = controller.actualAngle;
+        }
+    }
+};
+
+class BulletUpdateSystem : public UpdateSystem {
+public:
+    void run(double dT) {
+        const auto view = scene->r.view<RigidBodyComponent, BulletComponent>();
+
+        for (const auto e : view) {
+            const auto rb = view.get<RigidBodyComponent>(e);
+            auto& controller = view.get<BulletComponent>(e);
+
+            if (!controller.onFlight) continue;
+            
+            const float x = cosf(((float)(controller.inputAngle) * tau) / 360.0f);
+            const float y = sinf(((float)(controller.inputAngle) * tau) / 360.0f);
+            rb.body->SetLinearVelocity(b2Vec2(x * 500 * SCALE * PIXELS_PER_METER, 
+                                         -y * 500 * SCALE * PIXELS_PER_METER));
         }
     }
 };
@@ -463,8 +502,8 @@ private:
     const float y = sinf(((float)(playerController.inputAngle) * tau) / 360.0f);
 
 
-    playerController.Xv = x * 5 * SCALE * PIXELS_PER_METER;
-    playerController.Yv = y * 5 * SCALE * PIXELS_PER_METER;
+    playerController.Xv = x * 6 * SCALE * PIXELS_PER_METER;
+    playerController.Yv = y * 6 * SCALE * PIXELS_PER_METER;
 
     
     playerController.canJump = false;
@@ -487,9 +526,26 @@ private:
 
       print("shoot!");
       auto& bulletRB = scene->bullet->get<RigidBodyComponent>().body;
-      //asdf
-      bulletRB->SetTransform(b2Vec2(13 * SCALE * 4, 7 * SCALE * 4), 0);
-      bulletRB->ApplyLinearImpulseToCenter(b2Vec2(11 * SCALE * 4, 7 * SCALE * 4), true);
+
+      auto bodyPos = playerBody->GetTransform().p;
+      float new_pos_x = bodyPos.x;
+      float new_pos_y = bodyPos.y;
+
+      float new_vel_x;
+      float new_vel_y;
+
+      auto& bulletController = scene->bullet->get<BulletComponent>();
+
+      bulletController.onFlight = true;
+      if (playerController.isJumping)
+          bulletController.inputAngle = playerController.actualAngle;
+      else
+          bulletController.inputAngle = playerController.inputAngle;
+
+      new_vel_x = cosf(((float)(bulletController.inputAngle) * tau) / 360.0f);
+      new_vel_y = sinf(((float)(bulletController.inputAngle) * tau) / 360.0f);
+      
+      bulletRB->SetTransform(b2Vec2(new_pos_x + new_vel_x * 3*SCALE, new_pos_y - new_vel_y * 3*SCALE), 0);
   }
 };
 
@@ -553,6 +609,11 @@ public:
             bulletRB->SetTransform(b2Vec2(50 * SCALE * 4, 50 * SCALE * 4), 0);
             bulletRB->SetAwake(false);
             bulletCollided = true;
+            scene->bullet->get<BulletComponent>().onFlight = false;
+
+            auto& playerSprite = scene->player->get<SpriteComponent>();
+            playerSprite.yIndex = 0;
+            playerSprite.animationDuration = 2000.0f;
         }
 
         if (firstTag == "ENEMY" || secondTag == "ENEMY") {

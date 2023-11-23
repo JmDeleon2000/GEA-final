@@ -36,11 +36,13 @@ Scene* Demi::createGamePlayScene() {
   addUpdateSystem<PhysicsUpdateSystem>(scene);
   addUpdateSystem<MovementUpdateSystem>(scene);
   addUpdateSystem<EnemyUpdateSystem>(scene);
+  addUpdateSystem<EnemyDeathCheckUpSystem>(scene);
   addUpdateSystem<PlayerMovementUpdateSystem>(scene);
+  addUpdateSystem<BulletUpdateSystem>(scene);
   addEventSystem<PlayerInputSystem>(scene);
   
   addRenderSystem<TilemapRenderSystem>(scene);
   addRenderSystem<SpriteRenderSystem>(scene);
-  addRenderSystem<FixtureRenderSystem>(scene);
+  //addRenderSystem<FixtureRenderSystem>(scene);
   return scene;
 }
