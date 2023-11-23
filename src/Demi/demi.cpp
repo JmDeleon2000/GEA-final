@@ -35,7 +35,7 @@ Scene* Demi::createGamePlayScene() {
   
   addUpdateSystem<PhysicsUpdateSystem>(scene);
   addUpdateSystem<MovementUpdateSystem>(scene);
-  addUpdateSystem<EnemyMovementUpdateSystem>(scene);
+  addUpdateSystem<EnemyUpdateSystem>(scene);
   addUpdateSystem<PlayerMovementUpdateSystem>(scene);
   addEventSystem<PlayerInputSystem>(scene);
   

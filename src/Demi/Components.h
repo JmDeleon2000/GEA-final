@@ -29,6 +29,7 @@ struct LifeComponent {
 
 struct EnemyComponent 
 {
+	bool isDead;
 	bool going_right;
 	int left_limit;
 	int right_limit;

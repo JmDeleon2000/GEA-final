@@ -103,7 +103,7 @@ public:
     float hx = (2.0f * PIXELS_PER_METER) / 2.0f;
     float hy = (3.5f * PIXELS_PER_METER) / 2.0f;
 
-    enemy->addComponent<EnemyComponent>(true, (int)(x - 0.5 * SCALE * 4),
+    enemy->addComponent<EnemyComponent>(false, true, (int)(x - 0.5 * SCALE * 4),
                                               (int)(x + 0.5 * SCALE * 4));
     
     b2BodyDef bodyDef;
@@ -120,17 +120,20 @@ public:
     fixtureDef.density = 0.0000001f;
     fixtureDef.friction = 0.0f;
     
-    body->CreateFixture(&fixtureDef);
+    b2Fixture* fixture = body->CreateFixture(&fixtureDef);
     body->GetUserData().pointer = reinterpret_cast<uintptr_t>(enemy);
 
     enemy->addComponent<RigidBodyComponent>(
-      bodyDef.type,
-      body,
-      transform.x,
-      transform.y,
-      transform.w,
-      transform.h,
-      SDL_Color{0, 255, 0}
+        bodyDef.type,
+        body,
+        transform.x,
+        transform.y,
+        transform.w,
+        transform.h,
+        SDL_Color{ 0, 255, 0 },
+        1.0f,
+        0.3f,
+        fixture
     );
   }
 private:
@@ -249,7 +252,7 @@ public:
 };
 
 
-class EnemyMovementUpdateSystem : public UpdateSystem {
+class EnemyUpdateSystem : public UpdateSystem {
 public:
     void run(double dT) {
         const auto view = scene->r.view<RigidBodyComponent, EnemyComponent, SpriteComponent>();
@@ -259,7 +262,13 @@ public:
             auto& controller = view.get<EnemyComponent>(e);
             auto& sprite = view.get<SpriteComponent>(e);
 
-
+            if (controller.isDead)
+            {
+                
+                rb.body->DestroyFixture(rb.fixture);
+                scene->r.destroy(e);
+                continue;
+            }
 
             b2Vec2 position = rb.body->GetPosition(); // x, y meters
 
@@ -477,7 +486,10 @@ private:
       sprite.animationDuration = 50;
 
       print("shoot!");
-
+      auto& bulletRB = scene->bullet->get<RigidBodyComponent>().body;
+      //asdf
+      bulletRB->SetTransform(b2Vec2(13 * SCALE * 4, 7 * SCALE * 4), 0);
+      bulletRB->ApplyLinearImpulseToCenter(b2Vec2(11 * SCALE * 4, 7 * SCALE * 4), true);
   }
 };
 
@@ -516,7 +528,9 @@ public:
 
         Entity* firstEntity = (Entity*)event.user.data1;
         Entity* secondEntity = (Entity*)event.user.data2;
-        Entity* enemy = nullptr; 
+        bool playerCollided = false;
+        bool enemyCollided = false;
+        bool bulletCollided = false;
 
         if(event.user.data1)
             firstTag  = firstEntity->get<NameComponent>().tag;
@@ -531,22 +545,31 @@ public:
             playerController.isJumping = false;
             playerController.actualAngle = playerController.inputAngle;
             rb->SetLinearVelocity(b2Vec2(0, 0));
+            playerCollided = true;
+        }
+        if (firstTag == "BULLET" || secondTag == "BULLET") {
+            print("Bullet collided");
+            auto bulletRB = scene->bullet->get<RigidBodyComponent>().body;
+            bulletRB->SetTransform(b2Vec2(50 * SCALE * 4, 50 * SCALE * 4), 0);
+            bulletRB->SetAwake(false);
+            bulletCollided = true;
         }
 
-        if (firstTag == "ENEMY") {
-          enemy = firstEntity;
-        }
-        if (secondTag == "ENEMY") {
-          enemy = secondEntity;
-        }
-        if (firstTag == "BULLET") {
-            print("Bullet collided");
-        }
-        if (secondTag == "BULLET") {
-            print("Bullet collided");
+        if (firstTag == "ENEMY" || secondTag == "ENEMY") {
+            enemyCollided = true;
         }
 
-        if (enemy != nullptr) {
+        if (enemyCollided && bulletCollided) {
+            if (firstTag == "ENEMY") {
+                firstEntity->get<EnemyComponent>().isDead = true;
+                //scene->r.destroy((Entity*)firstEntity);
+            }
+            if (secondTag == "ENEMY") {
+                secondEntity->get<EnemyComponent>().isDead = true;
+            }
+        }
+
+        if (enemyCollided && playerCollided) {
           rb->ApplyForce(b2Vec2{-velocity.x, -velocity.y}, rb->GetLocalCenter(), true);
           print("Collision! hp reduced by one");
           auto& life = scene->player->get<LifeComponent>();
@@ -554,6 +577,7 @@ public:
         print("Hp Remaining:", life.hp);
         }
         
+
       
 
 
