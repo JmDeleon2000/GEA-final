@@ -28,6 +28,7 @@ class Scene {
     Entity* world;
     Entity* mainCamera;
     Entity* player;
+    Entity* bullet;
 
     entt::registry& r;
 

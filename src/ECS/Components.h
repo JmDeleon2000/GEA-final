@@ -60,7 +60,8 @@ struct PlayerControllerComponent {
 	float Xv;
 	float Yv;
 	float laserCD;
-	float lastSinceLaser;
+	Uint64 ticksSinceLaser;
 	bool canJump;
 	bool isJumping;
+	bool isShooting;
 };

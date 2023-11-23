@@ -27,3 +27,9 @@ struct LifeComponent {
   int hp;
 };
 
+struct EnemyComponent 
+{
+	bool going_right;
+	int left_limit;
+	int right_limit;
+};

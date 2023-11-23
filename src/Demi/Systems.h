@@ -33,17 +33,18 @@ public:
       "demi-lich.png",
       128, 128,
       0/*start x index*/, 0/*start y index*/,
-      8, 500
+      8, 2000
     );
 
-    auto controller = scene->player->addComponent<PlayerControllerComponent>(0, 45.0, 45.0, 0.0f, 0.0f, 1000.0f, 0.0f, true);
+    auto controller = scene->player->addComponent<PlayerControllerComponent>(0, 45.0, 45.0, 0.0f, 
+        0.0f, 2000.0f, SDL_GetTicks64(), true, false, false);
 
     auto world = scene->world->get<PhysicsComponent>().b2d;
 
     float x = 20 * PIXELS_PER_METER; 
     float y = 80 * PIXELS_PER_METER; 
-    float hx = (3.0f * PIXELS_PER_METER) / 2.0f;
-    float hy = (3.0f * PIXELS_PER_METER) / 2.0f;
+    float hx = (2.0f * PIXELS_PER_METER) / 2.0f;
+    float hy = (2.0f * PIXELS_PER_METER) / 2.0f;
 
     b2BodyDef bodyDef;
     bodyDef.type = b2_dynamicBody;
@@ -73,33 +74,40 @@ public:
       SDL_Color{0, 255, 0}
     );
 
-    scene->player->addComponent<LifeComponent>(10);
+    scene->player->addComponent<LifeComponent>(1);
   }
 };
 
 class EnemySetupSystem : public SetupSystem {
 public:
+    EnemySetupSystem(int x_position, int y_position) :  x_pos(x_position), y_pos(y_position)
+    {
+
+    }
   void run() {
     Entity* enemy = new Entity(scene->r.create(), scene);
     enemy->addComponent<NameComponent>("ENEMY");
     
-    auto transform = enemy->addComponent<TransformComponent>(0, 0, 16 * SCALE, 16 * SCALE, 0.0);
+    auto transform = enemy->addComponent<TransformComponent>(0, 0, 5 * SCALE, 5 * SCALE, 0.0);
     enemy->addComponent<SpriteComponent>(
       "purple-kobold.png",
       256, 256,
       0, 0,
-      1, 250
+      2, 500
     );
 
     auto world = scene->world->get<PhysicsComponent>().b2d;
 
-    float x = 60 * PIXELS_PER_METER; 
-    float y = 35 * PIXELS_PER_METER; 
-    float hx = (16.0f * PIXELS_PER_METER) / 2.0f;
-    float hy = (16.0f * PIXELS_PER_METER) / 2.0f;
+    float x = x_pos * SCALE * 4;
+    float y = y_pos * SCALE * 4; 
+    float hx = (2.0f * PIXELS_PER_METER) / 2.0f;
+    float hy = (3.5f * PIXELS_PER_METER) / 2.0f;
 
+    enemy->addComponent<EnemyComponent>(true, (int)(x - 0.5 * SCALE * 4),
+                                              (int)(x + 0.5 * SCALE * 4));
+    
     b2BodyDef bodyDef;
-    bodyDef.type = b2_staticBody;
+    bodyDef.type = b2_kinematicBody;
     bodyDef.position.Set(x + hx, y + hy);
 
     b2Body* body = world->CreateBody(&bodyDef);
@@ -125,67 +133,62 @@ public:
       SDL_Color{0, 255, 0}
     );
   }
+private:
+    int x_pos;
+    int y_pos;
 };
 
 
-class BgSetupSystem : public SetupSystem {
-
-private:
-    int x;
-    int y;
-    int w;
-    int h;
-
-
+class BulletSetupSystem : public SetupSystem {
 public:
-    BgSetupSystem(int pos_x, int pos_y, int width, int height)
-    {
-        this->x = pos_x;
-        this->y = pos_y;
-        this->w = width;
-        this->h = height;
+    void run() {
+        scene->bullet = new Entity(scene->r.create(), scene);
+        scene->bullet->addComponent<NameComponent>("BULLET");
+
+        auto transform = scene->bullet->addComponent<TransformComponent>(0, 0, 1 * SCALE, 1 * SCALE, 0.0);
+        scene->bullet->addComponent<SpriteComponent>(
+            "Laser.png",
+            256, 256,
+            0, 0,
+            2, 500
+        );
+
+        auto world = scene->world->get<PhysicsComponent>().b2d;
+
+        float x = 13 * SCALE * 4;
+        float y = 22 * SCALE * 4;
+        float hx = (1.0f * PIXELS_PER_METER) / 2.0f;
+        float hy = (1.0f * PIXELS_PER_METER) / 2.0f;
+
+        b2BodyDef bodyDef;
+        bodyDef.type = b2_dynamicBody;
+        bodyDef.position.Set(x + hx, y + hy);
+        bodyDef.bullet = true;
+
+        b2Body* body = world->CreateBody(&bodyDef);
+
+        b2PolygonShape box;
+        box.SetAsBox(hx, hy);
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &box;
+        fixtureDef.density = 0.0000001f;
+        fixtureDef.friction = 0.0f;
+
+        body->CreateFixture(&fixtureDef);
+        body->GetUserData().pointer = reinterpret_cast<uintptr_t>(scene->bullet);
+        body->SetAwake(false);
+
+        scene->bullet->addComponent<RigidBodyComponent>(
+            bodyDef.type,
+            body,
+            transform.x,
+            transform.y,
+            transform.w,
+            transform.h,
+            SDL_Color{ 0, 255, 0 }
+        );
     }
-  void run() {
-    if (scene->world == nullptr) {
-      scene->world = new Entity(scene->r.create(), scene);
-    }
-    const auto transform = scene->world->addComponent<TransformComponent>(this->x * SCALE, this->y * SCALE, 
-        this->w * SCALE, this->h * SCALE, 0.0);
-    scene->world->addComponent<SpriteComponent>(
-      "background.png",
-      440, 330,
-      0, 0
-    );
-
-    auto world = scene->world->get<PhysicsComponent>().b2d;
-
-    float x = this->x * PIXELS_PER_METER; 
-    float y = this->y * PIXELS_PER_METER; 
-    float hx = (this->w * PIXELS_PER_METER) / 2.0f;  // this is half width
-    float hy = (this->h * PIXELS_PER_METER) / 2.0f;
-
-    b2BodyDef bodyDef;
-    bodyDef.type = b2_staticBody;
-    bodyDef.position.Set(x + hx, y + hy);
-    
-    b2Body* body = world->CreateBody(&bodyDef);
-
-    b2PolygonShape groundBox;
-    groundBox.SetAsBox(hx, hy);
-
-    body->CreateFixture(&groundBox, 0.0f);
-    
-    scene->world->addComponent<RigidBodyComponent>(
-      bodyDef.type,
-      body,
-      transform.x,
-      transform.y,
-      transform.w,
-      transform.h,
-      SDL_Color{0, 0, 255}
-    );
-    
-  }
 };
 
 class BgColorSystem : public RenderSystem {
@@ -222,11 +225,14 @@ public:
 class MovementUpdateSystem : public UpdateSystem {
 public:
   void run(double dT) {
-    const auto view = scene->r.view<RigidBodyComponent, TransformComponent>();
+    const auto view = scene->r.view<RigidBodyComponent, TransformComponent, NameComponent>();
 
     for (const auto e : view) {
       const auto rb = view.get<RigidBodyComponent>(e);
       auto& transform = view.get<TransformComponent>(e);
+      auto& name = view.get<NameComponent>(e);
+
+
       
       b2Vec2 position = rb.body->GetPosition(); // x, y meters
 
@@ -241,6 +247,55 @@ public:
     }
   }
 };
+
+
+class EnemyMovementUpdateSystem : public UpdateSystem {
+public:
+    void run(double dT) {
+        const auto view = scene->r.view<RigidBodyComponent, EnemyComponent, SpriteComponent>();
+
+        for (const auto e : view) {
+            const auto rb = view.get<RigidBodyComponent>(e);
+            auto& controller = view.get<EnemyComponent>(e);
+            auto& sprite = view.get<SpriteComponent>(e);
+
+
+
+            b2Vec2 position = rb.body->GetPosition(); // x, y meters
+
+
+            // Convert the Box2D position (center of the body) to screen coordinates
+            float centerX = position.x * SCALE / PIXELS_PER_METER;  
+            float centerY = position.y * SCALE / PIXELS_PER_METER;
+
+            if (controller.going_right)
+            {
+                if (centerX < controller.right_limit)
+                {
+                    rb.body->SetLinearVelocity(b2Vec2(0.5 * SCALE * PIXELS_PER_METER, 0));
+                }
+                else
+                {
+                    rb.body->SetLinearVelocity(b2Vec2(0, 0));
+                    controller.going_right = false;
+                    sprite.yIndex = 1;
+                }
+            }
+            else
+            {
+                if (centerX > controller.left_limit)
+                    rb.body->SetLinearVelocity(b2Vec2(-0.5 * SCALE * PIXELS_PER_METER, 0));
+                else
+                {
+                    rb.body->SetLinearVelocity(b2Vec2(0, 0));
+                    controller.going_right = true;
+                    sprite.yIndex = 0;
+                }
+            }
+        }
+    }
+};
+
 
 class PlayerMovementUpdateSystem : public UpdateSystem {
 public:
@@ -280,14 +335,6 @@ public:
                 controller.actualAngle = controller.inputAngle;
             }
             transform.angle = controller.actualAngle;
-
-            // Convert the Box2D position (center of the body) to screen coordinates
-            float centerX = position.x * SCALE / PIXELS_PER_METER; // 20 pixels * 8 pixels / 10 meters  
-            float centerY = position.y * SCALE / PIXELS_PER_METER;
-
-            // Adjust for the entity's dimensions to get the top-left corner
-            transform.x = centerX - static_cast<float>(transform.w) / 2.0f;
-            transform.y = centerY - static_cast<float>(transform.h) / 2.0f;
         }
     }
 };
@@ -349,25 +396,35 @@ public:
   }
 };
 
-class MovementInputSystem : public EventSystem {
+class PlayerInputSystem : public EventSystem {
 public:
   void run(SDL_Event event) {
     if (event.type == SDL_KEYDOWN) {
-      // move
-      if (event.key.keysym.sym == SDLK_LEFT) {
-        moveCharacter(-1);
-      } else if (event.key.keysym.sym == SDLK_RIGHT) {
-        moveCharacter(1);
-      } else if (event.key.keysym.sym == SDLK_SPACE) {
-        jumpCharacter();
-      }
+        switch (event.key.keysym.sym)
+        {
+        case SDLK_a:
+            moveCharacter(-1);
+            break;
+        case SDLK_d:
+            moveCharacter(1);
+            break;
+        case SDLK_SPACE:
+            jumpCharacter();
+            break;
+        case SDLK_f:
+            shootLaser();
+            break;
+        }
     } else if (event.type == SDL_KEYUP) {
-      // stop movement
-      if (event.key.keysym.sym == SDLK_LEFT) {
-        stopCharacter();
-      } else if (event.key.keysym.sym == SDLK_RIGHT) {
-        stopCharacter();
-      }
+        switch (event.key.keysym.sym)
+        {
+        case SDLK_a:
+            stopCharacter();
+            break;
+        case SDLK_d:
+            stopCharacter();
+            break;
+        }
     }
   }
 
@@ -393,18 +450,40 @@ private:
     const auto playerBody = scene->player->get<RigidBodyComponent>().body;
     if (!playerController.canJump) return;
     
-    const float x = cosf((transform.angle * tau) / 360.0f);
-    const float y = sinf((transform.angle * tau) / 360.0f);
+    const float x = cosf(((float)(playerController.inputAngle) * tau) / 360.0f);
+    const float y = sinf(((float)(playerController.inputAngle) * tau) / 360.0f);
 
 
-    playerController.Xv = x * 4 * SCALE * PIXELS_PER_METER;
-    playerController.Yv = y * 4 * SCALE * PIXELS_PER_METER;
+    playerController.Xv = x * 5 * SCALE * PIXELS_PER_METER;
+    playerController.Yv = y * 5 * SCALE * PIXELS_PER_METER;
 
     
     playerController.canJump = false;
     playerController.isJumping = true;
   }
+
+  void shootLaser() {
+      auto& playerController = scene->player->get<PlayerControllerComponent>();
+      auto& sprite = scene->player->get<SpriteComponent>();
+      const auto playerBody = scene->player->get<RigidBodyComponent>().body;
+
+      Uint64 now = SDL_GetTicks64();
+      float elapsed = now - playerController.ticksSinceLaser;
+      if (playerController.laserCD > elapsed) return;
+      playerController.ticksSinceLaser = now;
+      playerController.isShooting = true;
+
+      sprite.yIndex = 1;
+      sprite.animationDuration = 50;
+
+      print("shoot!");
+
+  }
 };
+
+
+
+
 
 class CollisionEventSetupSystem : public SetupSystem {
 public:
@@ -431,13 +510,17 @@ public:
     if (event.type == collisionEvent) {
         auto& playerController = scene->player->get<PlayerControllerComponent>();
         auto rb = scene->player->get<RigidBodyComponent>().body;
+        playerController.canJump = true;
+        playerController.isJumping = false;
+        playerController.actualAngle = playerController.inputAngle;
+        rb->SetLinearVelocity(b2Vec2(0, 0));
       if (event.user.data1 && event.user.data2) {
-        print("Collision! hp reduced by one");
-        auto& life = scene->player->get<LifeComponent>();
-        life.hp -= 1;
+
 
 
         rb->SetLinearVelocity(b2Vec2(0, 0));
+
+        auto velocity = rb->GetLinearVelocity();
 
 
         Entity* firstEntity = (Entity*)event.user.data1;
@@ -450,20 +533,24 @@ public:
         if (secondEntity->get<NameComponent>().tag == "ENEMY") {
           enemy = secondEntity;
         }
+        if (firstEntity->get<NameComponent>().tag == "BULLET") {
+            print("Bullet collided");
+        }
+        if (secondEntity->get<NameComponent>().tag == "BULLET") {
+            print("Bullet collided");
+        }
         if (enemy != nullptr) {
-          print("PUSH PLAYER LEFT!");
-          rb->ApplyForce(b2Vec2{-100.0f, 0}, rb->GetLocalCenter(), true);
+          rb->ApplyForce(b2Vec2{-velocity.x, -velocity.y}, rb->GetLocalCenter(), true);
+          print("Collision! hp reduced by one");
+          auto& life = scene->player->get<LifeComponent>();
+          life.hp -= 1;
+        print("Hp Remaining:", life.hp);
         }
         
-        print("Hp Remaining:", life.hp);
       }
-      else 
-      {
-          playerController.canJump = true;
-          playerController.isJumping = false;
-          playerController.actualAngle = playerController.inputAngle;
-          rb->SetLinearVelocity(b2Vec2(0, 0));
-      }
+
+
+      
     }
   }
 private:

@@ -19,23 +19,28 @@ Scene* Demi::createGamePlayScene() {
   Scene* scene = new Scene("GAMEPLAY SCENE", r);
   addSetupSystem<PhysicsSetupSystem>(scene);
   addSetupSystem<CharacterSetupSystem>(scene);
-  //addSetupSystem<EnemySetupSystem>(scene);
-
   addSetupSystem<TilemapSetupSystem>(scene, renderer);
+
+  addSetupSystem<EnemySetupSystem>(scene, 15, 11);
+  addSetupSystem<EnemySetupSystem>(scene, 9, 14);
+  addSetupSystem<EnemySetupSystem>(scene, 22, 20);
+  addSetupSystem<EnemySetupSystem>(scene, 19, 14);
+  addSetupSystem<BulletSetupSystem>(scene);
 
   addSetupSystem<SpriteSetupSystem>(scene, renderer);
   addUpdateSystem<SpriteUpdateSystem>(scene);
   addSetupSystem<CollisionEventSetupSystem>(scene, collisionEvent);
   addEventSystem<ContactEventSystem>(scene, collisionEvent);
   addUpdateSystem<HpCheckUpdateSystem>(scene);
-
+  
   addUpdateSystem<PhysicsUpdateSystem>(scene);
   addUpdateSystem<MovementUpdateSystem>(scene);
+  addUpdateSystem<EnemyMovementUpdateSystem>(scene);
   addUpdateSystem<PlayerMovementUpdateSystem>(scene);
-  addEventSystem<MovementInputSystem>(scene);
+  addEventSystem<PlayerInputSystem>(scene);
   
   addRenderSystem<TilemapRenderSystem>(scene);
   addRenderSystem<SpriteRenderSystem>(scene);
-  //addRenderSystem<FixtureRenderSystem>(scene);
+  addRenderSystem<FixtureRenderSystem>(scene);
   return scene;
 }
