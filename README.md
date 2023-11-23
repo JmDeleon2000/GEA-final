@@ -1,7 +1,9 @@
 # Instructions
 ## Rotate left
-**LEFT ARROW**
+**A Key**
 ## Rotate right
-**RIGHT ARROW**
+**D Key**
 ## Jump
 **SPACE**
+## Fire
+**F key**
