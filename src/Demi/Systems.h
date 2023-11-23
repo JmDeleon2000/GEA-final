@@ -510,35 +510,42 @@ public:
     if (event.type == collisionEvent) {
         auto& playerController = scene->player->get<PlayerControllerComponent>();
         auto rb = scene->player->get<RigidBodyComponent>().body;
-        playerController.canJump = true;
-        playerController.isJumping = false;
-        playerController.actualAngle = playerController.inputAngle;
-        rb->SetLinearVelocity(b2Vec2(0, 0));
-      if (event.user.data1 && event.user.data2) {
 
-
-
-        rb->SetLinearVelocity(b2Vec2(0, 0));
-
-        auto velocity = rb->GetLinearVelocity();
-
+        std::string firstTag = "";
+        std::string secondTag = "";
 
         Entity* firstEntity = (Entity*)event.user.data1;
         Entity* secondEntity = (Entity*)event.user.data2;
         Entity* enemy = nullptr; 
 
-        if (firstEntity->get<NameComponent>().tag == "ENEMY") {
+        if(event.user.data1)
+            firstTag  = firstEntity->get<NameComponent>().tag;
+        if (event.user.data2)
+            secondTag = secondEntity->get<NameComponent>().tag;
+
+        auto velocity = rb->GetLinearVelocity();
+
+        if (firstTag == "PLAYER" || secondTag == "PLAYER")
+        {
+            playerController.canJump = true;
+            playerController.isJumping = false;
+            playerController.actualAngle = playerController.inputAngle;
+            rb->SetLinearVelocity(b2Vec2(0, 0));
+        }
+
+        if (firstTag == "ENEMY") {
           enemy = firstEntity;
         }
-        if (secondEntity->get<NameComponent>().tag == "ENEMY") {
+        if (secondTag == "ENEMY") {
           enemy = secondEntity;
         }
-        if (firstEntity->get<NameComponent>().tag == "BULLET") {
+        if (firstTag == "BULLET") {
             print("Bullet collided");
         }
-        if (secondEntity->get<NameComponent>().tag == "BULLET") {
+        if (secondTag == "BULLET") {
             print("Bullet collided");
         }
+
         if (enemy != nullptr) {
           rb->ApplyForce(b2Vec2{-velocity.x, -velocity.y}, rb->GetLocalCenter(), true);
           print("Collision! hp reduced by one");
@@ -547,7 +554,7 @@ public:
         print("Hp Remaining:", life.hp);
         }
         
-      }
+      
 
 
       
